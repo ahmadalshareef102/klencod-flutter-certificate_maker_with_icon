@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>مولّد أكواد التفعيل — صانع الشهادات</title>
+<style>
+:root{--navy:#14243a;--gold:#c8a45d;--bg:#f3f5f8;--fg:#1b1b1b;--card:#fff;--line:#d9dde3}
+@media (prefers-color-scheme:dark){:root{--bg:#0f1722;--fg:#eef1f5;--card:#1b2638;--line:#33415a}}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,"Noto Sans Arabic",Tahoma,sans-serif;background:var(--bg);color:var(--fg);line-height:1.6}
+header{background:var(--navy);color:#fff;padding:16px;border-bottom:4px solid var(--gold)}
+header h1{margin:0;font-size:18px}header p{margin:4px 0 0;font-size:12px;opacity:.8}
+main{max-width:640px;margin:0 auto;padding:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin:12px 0}
+label{display:block;font-weight:700;font-size:14px;margin:0 0 6px}
+textarea,input[type=text]{width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;font:14px/1.4 ui-monospace,Menlo,monospace;background:transparent;color:inherit;direction:ltr;text-align:left}
+textarea{min-height:92px;resize:vertical}
+button{font:inherit;font-weight:700;border:0;border-radius:10px;padding:11px 16px;background:var(--navy);color:#fff;cursor:pointer}
+button.gold{background:var(--gold);color:#14243a}
+button.ghost{background:transparent;color:inherit;border:1px solid var(--line)}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.note{font-size:12px;opacity:.75;margin-top:6px}
+.ok{color:#15803d}.bad{color:#b91c1c}
+#out{font-size:12px;word-break:break-all}
+.chk{display:flex;gap:8px;align-items:center;font-size:13px;margin-top:8px}
+</style>
+</head>
+<body>
+<header>
+  <h1>مولّد أكواد التفعيل — صانع الشهادات الاحترافي</h1>
+  <p>للمبرمج فقط · يعمل دون إنترنت · لا يرسل أي شيء خارج هذه الصفحة</p>
+</header>
+<main>
+  <div class="card">
+    <label for="key">المفتاح الخاص (محتوى activation_private_key)</label>
+    <textarea id="key" placeholder="-----BEGIN PRIVATE KEY-----&#10;....&#10;-----END PRIVATE KEY-----" spellcheck="false" autocomplete="off"></textarea>
+    <div id="keyState" class="note"></div>
+    <div class="chk"><input type="checkbox" id="remember"><label for="remember" style="margin:0;font-weight:400">تذكّر المفتاح على هذا الجهاز (غير مستحسن على جهاز مشترك)</label></div>
+    <div class="row"><button class="ghost" id="clearKey" type="button">مسح المفتاح</button></div>
+  </div>
+
+  <div class="card">
+    <label for="dev">معرّف جهاز المستخدم</label>
+    <input type="text" id="dev" placeholder="PCM-XXXX-XXXX-XXXX" autocomplete="off" autocapitalize="characters" spellcheck="false">
+    <div class="row">
+      <button class="gold" id="go" type="button">إنشاء كود التفعيل</button>
+      <button class="ghost" id="paste" type="button">لصق المعرّف</button>
+    </div>
+    <div id="err" class="note bad"></div>
+  </div>
+
+  <div class="card" id="res" hidden>
+    <label>كود التفعيل (أرسله للمستخدم)</label>
+    <textarea id="out" readonly></textarea>
+    <div class="row">
+      <button id="copy" type="button">نسخ الكود</button>
+      <button class="ghost" id="share" type="button">مشاركة</button>
+    </div>
+    <div id="copied" class="note ok"></div>
+  </div>
+  <p class="note">الكود مرتبط بالمعرّف المُدخَل فقط، ولا يعمل على جهاز آخر. المفتاح العام المضمَّن في التطبيق: <span dir="ltr">7yxHJFMlyLaKOK74A0BA8lReuzQh/TNqVepMHd1IYLg=</span></p>
+</main>
+
+<script>
+"use strict";
+/* ---------- SHA-512 (ثوابتها تُحسب من الجذور الصحيحة فلا حاجة لحفظها يدويًا) ---------- */
+const M64 = (1n << 64n) - 1n;
+function iroot(n, k) { // الجذر الصحيح من الرتبة k
+  let x = 1n << BigInt(Math.ceil(n.toString(2).length / Number(k)) + 1);
+  for (;;) {
+    const y = ((k - 1n) * x + n / (x ** (k - 1n))) / k;
+    if (y >= x) return x;
+    x = y;
+  }
+}
+const primes = [];
+for (let n = 2; primes.length < 80; n++) if (primes.every(p => n % p)) primes.push(n);
+const K = primes.map(p => iroot(BigInt(p) << 192n, 3n) & M64);
+const H0 = primes.slice(0, 8).map(p => iroot(BigInt(p) << 128n, 2n) & M64);
+const rotr = (x, n) => ((x >> n) | (x << (64n - n))) & M64;
+
+function sha512(bytes) {
+  const len = bytes.length, padLen = ((len + 17 + 127) >> 7) << 7;
+  const buf = new Uint8Array(padLen);
+  buf.set(bytes); buf[len] = 0x80;
+  let bits = BigInt(len) * 8n;
+  for (let i = 0; i < 16; i++) { buf[padLen - 1 - i] = Number(bits & 0xffn); bits >>= 8n; }
+  const h = H0.slice();
+  const w = new Array(80);
+  for (let off = 0; off < padLen; off += 128) {
+    for (let i = 0; i < 16; i++) {
+      let v = 0n;
+      for (let j = 0; j < 8; j++) v = (v << 8n) | BigInt(buf[off + i * 8 + j]);
+      w[i] = v;
+    }
+    for (let i = 16; i < 80; i++) {
+      const s0 = rotr(w[i - 15], 1n) ^ rotr(w[i - 15], 8n) ^ (w[i - 15] >> 7n);
+      const s1 = rotr(w[i - 2], 19n) ^ rotr(w[i - 2], 61n) ^ (w[i - 2] >> 6n);
+      w[i] = (w[i - 16] + s0 + w[i - 7] + s1) & M64;
+    }
+    let [a, b, c, d, e, f, g, hh] = h;
+    for (let i = 0; i < 80; i++) {
+      const S1 = rotr(e, 14n) ^ rotr(e, 18n) ^ rotr(e, 41n);
+      const ch = (e & f) ^ (~e & M64 & g);
+      const t1 = (hh + S1 + ch + K[i] + w[i]) & M64;
+      const S0 = rotr(a, 28n) ^ rotr(a, 34n) ^ rotr(a, 39n);
+      const mj = (a & b) ^ (a & c) ^ (b & c);
+      const t2 = (S0 + mj) & M64;
+      hh = g; g = f; f = e; e = (d + t1) & M64; d = c; c = b; b = a; a = (t1 + t2) & M64;
+    }
+    [a, b, c, d, e, f, g, hh].forEach((v, i) => { h[i] = (h[i] + v) & M64; });
+  }
+  const out = new Uint8Array(64);
+  h.forEach((v, i) => { for (let j = 7; j >= 0; j--) { out[i * 8 + j] = Number(v & 0xffn); v >>= 8n; } });
+  return out;
+}
+
+/* ---------- Ed25519 (RFC 8032) ---------- */
+const P = (1n << 255n) - 19n;
+const L = (1n << 252n) + 27742317777372353535851937790883648493n;
+const mod = (a, m = P) => { const r = a % m; return r >= 0n ? r : r + m; };
+function pw(b, e, m = P) { let r = 1n; b = mod(b, m); while (e > 0n) { if (e & 1n) r = r * b % m; b = b * b % m; e >>= 1n; } return r; }
+const inv = x => pw(x, P - 2n);
+const D = mod(-121665n * inv(121666n));
+const Gx = 15112221349535400772501151409588531511454012693041857206046113283949847762202n;
+const Gy = 46316835694926478169428394003475163141307993866256225615783033603165251855960n;
+const G = [Gx, Gy, 1n, mod(Gx * Gy)];
+function add(p, q) {
+  const A = mod((p[1] - p[0]) * (q[1] - q[0])), B = mod((p[1] + p[0]) * (q[1] + q[0]));
+  const C = mod(p[3] * 2n * D * q[3]), Dd = mod(p[2] * 2n * q[2]);
+  const E = B - A, F = Dd - C, Gg = Dd + C, Hh = B + A;
+  return [mod(E * F), mod(Gg * Hh), mod(F * Gg), mod(E * Hh)];
+}
+function mul(s, p) {
+  let r = [0n, 1n, 1n, 0n];
+  while (s > 0n) { if (s & 1n) r = add(r, p); p = add(p, p); s >>= 1n; }
+  return r;
+}
+function enc(p) {
+  const zi = inv(p[2]), x = mod(p[0] * zi), y = mod(p[1] * zi);
+  const out = leBytes(y, 32);
+  if (x & 1n) out[31] |= 0x80;
+  return out;
+}
+function leBytes(n, len) { const o = new Uint8Array(len); for (let i = 0; i < len; i++) { o[i] = Number(n & 0xffn); n >>= 8n; } return o; }
+function leInt(b) { let n = 0n; for (let i = b.length - 1; i >= 0; i--) n = (n << 8n) | BigInt(b[i]); return n; }
+function cat(...a) { const o = new Uint8Array(a.reduce((s, x) => s + x.length, 0)); let i = 0; for (const x of a) { o.set(x, i); i += x.length; } return o; }
+
+function keyParts(seed) {
+  const h = sha512(seed);
+  const a = h.slice(0, 32); a[0] &= 248; a[31] &= 127; a[31] |= 64;
+  const s = leInt(a);
+  return { s, prefix: h.slice(32), pub: enc(mul(s, G)) };
+}
+function sign(seed, msg) {
+  const { s, prefix, pub } = keyParts(seed);
+  const r = mod(leInt(sha512(cat(prefix, msg))), L);
+  const R = enc(mul(r, G));
+  const k = mod(leInt(sha512(cat(R, pub, msg))), L);
+  return cat(R, leBytes(mod(r + k * s, L), 32));
+}
+
+/* ---------- أدوات ---------- */
+const b64d = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+const b64 = u => btoa(String.fromCharCode(...u));
+const b64url = u => b64(u).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+const APP_PUB = "7yxHJFMlyLaKOK74A0BA8lReuzQh/TNqVepMHd1IYLg=";
+
+function parseSeed(text) {
+  const body = text.replace(/-----[^-]+-----/g, "").replace(/\s+/g, "");
+  if (!body) throw new Error("الصق المفتاح الخاص أولًا");
+  let raw;
+  try { raw = b64d(body); } catch (e) { throw new Error("المفتاح غير صالح (ليس Base64)"); }
+  if (raw.length === 32) return raw;
+  if (raw.length === 48) return raw.slice(16);           // PKCS8 لمفتاح Ed25519
+  throw new Error("طول المفتاح غير متوقع (" + raw.length + " بايت)");
+}
+function signCode(keyText, device) {
+  const id = device.trim().toUpperCase().replace(/\s+/g, "");
+  if (!/^PCM-[A-Z2-9]{4}-[A-Z2-9]{4}-[A-Z2-9]{4}$/.test(id)) throw new Error("صيغة المعرّف غير صحيحة، مثال: PCM-7K3F-9QXD-M2WA");
+  const sig = sign(parseSeed(keyText), new TextEncoder().encode("PCM1|" + id));
+  return { id, code: b64url(sig) };
+}
+
+/* ---------- الواجهة ---------- */
+if (typeof document !== "undefined") {
+  const $ = id => document.getElementById(id);
+  const KEY = "pcm_activation_key";
+  try { const k = localStorage.getItem(KEY); if (k) { $("key").value = k; $("remember").checked = true; } } catch (e) {}
+
+  function checkKey() {
+    const st = $("keyState");
+    if (!$("key").value.trim()) { st.textContent = ""; return; }
+    try {
+      const pub = b64(keyParts(parseSeed($("key").value)).pub);
+      if (pub === APP_PUB) { st.className = "note ok"; st.textContent = "✔ المفتاح يطابق المفتاح العام المضمَّن في التطبيق"; }
+      else { st.className = "note bad"; st.textContent = "✘ هذا المفتاح لا يطابق مفتاح التطبيق — الأكواد لن تعمل"; }
+    } catch (e) { st.className = "note bad"; st.textContent = e.message; }
+  }
+  $("key").addEventListener("input", () => { checkKey(); persist(); });
+  $("remember").addEventListener("change", persist);
+  function persist() {
+    try { if ($("remember").checked) localStorage.setItem(KEY, $("key").value); else localStorage.removeItem(KEY); } catch (e) {}
+  }
+  $("clearKey").onclick = () => { $("key").value = ""; $("remember").checked = false; persist(); checkKey(); $("res").hidden = true; };
+  $("paste").onclick = async () => { try { $("dev").value = (await navigator.clipboard.readText()).trim(); } catch (e) { $("err").textContent = "تعذر اللصق، الصق يدويًا"; } };
+  $("go").onclick = () => {
+    $("err").textContent = ""; $("copied").textContent = "";
+    try {
+      const r = signCode($("key").value, $("dev").value);
+      $("dev").value = r.id; $("out").value = r.code; $("res").hidden = false;
+    } catch (e) { $("res").hidden = true; $("err").textContent = e.message; }
+  };
+  $("copy").onclick = async () => {
+    try { await navigator.clipboard.writeText($("out").value); $("copied").textContent = "تم النسخ ✔"; }
+    catch (e) { $("out").select(); $("copied").textContent = "حدّد النص وانسخه يدويًا"; }
+  };
+  $("share").onclick = () => {
+    const t = "كود تفعيل صانع الشهادات:\n" + $("out").value;
+    if (navigator.share) navigator.share({ text: t }).catch(() => {}); else $("copied").textContent = "المشاركة غير مدعومة، استخدم النسخ";
+  };
+  checkKey();
+}
+if (typeof module !== "undefined") module.exports = { signCode, sha512, keyParts, parseSeed };
+</script>
+</body>
+</html>

@@ -1,0 +1,124 @@
+{
+ "fonts": [
+  {
+   "family": "AlFares",
+   "file": "AlFares.ttf",
+   "label": "الفارس (عريض)",
+   "kind": "text"
+  },
+  {
+   "family": "DecoThuluth",
+   "file": "DecoThuluth.ttf",
+   "label": "ثلث ديكوتايب",
+   "kind": "text"
+  },
+  {
+   "family": "HacenLinerLight",
+   "file": "HacenLinerLight.ttf",
+   "label": "حاسن لاينر خفيف",
+   "kind": "text"
+  },
+  {
+   "family": "HacenLinerBold",
+   "file": "HacenLinerBold.ttf",
+   "label": "حاسن لاينر عريض",
+   "kind": "text"
+  },
+  {
+   "family": "HacenPromoter",
+   "file": "HacenPromoter.ttf",
+   "label": "حاسن بروموتر",
+   "kind": "text"
+  },
+  {
+   "family": "HacenVanilla",
+   "file": "HacenVanilla.ttf",
+   "label": "حاسن فانيلا خفيف",
+   "kind": "text"
+  },
+  {
+   "family": "MohammadBold",
+   "file": "MohammadBold.ttf",
+   "label": "محمد عريض",
+   "kind": "text"
+  },
+  {
+   "family": "MohammadHead",
+   "file": "MohammadHead.ttf",
+   "label": "محمد للعناوين",
+   "kind": "text"
+  },
+  {
+   "family": "MohammadLaha",
+   "file": "MohammadLaha.ttf",
+   "label": "محمد لاحا",
+   "kind": "text"
+  },
+  {
+   "family": "EdwardianScript",
+   "file": "EdwardianScript.ttf",
+   "label": "Edwardian Script (إنجليزي)",
+   "kind": "latin"
+  },
+  {
+   "family": "AgaArabesque",
+   "file": "AgaArabesque.ttf",
+   "label": "زخارف أرابيسك (رموز)",
+   "kind": "symbol"
+  },
+  {
+   "family": "AraSymEid1",
+   "file": "AraSymEid1.ttf",
+   "label": "عيد 1 (رموز)",
+   "kind": "symbol"
+  },
+  {
+   "family": "AraSymEid2",
+   "file": "AraSymEid2.ttf",
+   "label": "عيد 2 (رموز)",
+   "kind": "symbol"
+  },
+  {
+   "family": "AraSymRamadan1",
+   "file": "AraSymRamadan1.ttf",
+   "label": "رمضان 1 (رموز)",
+   "kind": "symbol"
+  },
+  {
+   "family": "AraSymRamadan2",
+   "file": "AraSymRamadan2.ttf",
+   "label": "رمضان 2 (رموز)",
+   "kind": "symbol"
+  },
+  {
+   "family": "AraSymRamadan3",
+   "file": "AraSymRamadan3.ttf",
+   "label": "رمضان 3 (رموز)",
+   "kind": "symbol"
+  },
+  {
+   "family": "Fanan",
+   "file": "Fanan.ttf",
+   "label": "فنان (رموز)",
+   "kind": "symbol"
+  },
+  {
+   "family": "AlHor",
+   "file": "AlHor.ttf",
+   "label": "الحر (رموز)",
+   "kind": "symbol"
+  },
+  {
+   "family": "SultanDeco",
+   "file": "SultanDeco.ttf",
+   "label": "سلطان (زخرفي)",
+   "kind": "symbol"
+  },
+  {
+   "family": "SmartphonePro",
+   "file": "SmartphonePro.ttf",
+   "label": "أيقونات (رموز)",
+   "kind": "symbol"
+  }
+ ]
+}
